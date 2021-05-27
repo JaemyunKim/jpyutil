@@ -121,7 +121,7 @@ def readEnv(path=".", filename="env"):
     return items
 
 
-def makeFilelise(directory="."):
+def makeFilelist(directory="."):
     # check the target directory
     if not os.path.exists(directory):
         print("Cannot find the directory: {}".format(directory))
