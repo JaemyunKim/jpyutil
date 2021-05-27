@@ -46,7 +46,7 @@ class S3Storage():
         #with tqdm.tqdm(total = len(self.file_names)) as global_progress:
             #global_progress.set_description("total")
         mps = list()
-        for i in range(tasks):
+        for i in range(len(tasks)):
             worker = Worker_S3Uploader(self.env_items, tasks[i])#, global_progress)
             worker.daemon = True
             mps.append(worker)
@@ -142,8 +142,8 @@ class Worker_S3Uploader(multiprocessing.Process):
                 if self.global_tqdm is not None:
                     self.global_tqdm.update()
 
-                with open(logFName, "a", encoding="utf-8") as f:
-                    f.write("summary:\nsuccess={}\nfailed={}".format(cnt_success, cnt_fail))
+            with open(logFName, "a", encoding="utf-8") as f:
+                f.write("summary:\nsuccess={}\nfailed={}".format(cnt_success, cnt_fail))
 
         except Exception as e:
             print(e)
