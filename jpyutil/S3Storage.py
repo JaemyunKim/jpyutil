@@ -26,7 +26,8 @@ class S3Storage():
             if env_items["NUM_CPUS"] == 1:
                 self.process_count = 1
             elif env_items["NUM_CPUS"] > 1:
-                self.process_count = max(min(env_items["NUM_CPUS"], multiprocessing.cpu_count()), 1)
+                # self.process_count = max(min(env_items["NUM_CPUS"], multiprocessing.cpu_count()), 1)
+                self.process_count = env_items["NUM_CPUS"]
             else:
                 self.process_count = multiprocessing.cpu_count()
         else:
