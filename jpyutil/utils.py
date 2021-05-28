@@ -156,6 +156,9 @@ def makeFilelist(directory="."):
                 with open(logFName, "a", encoding="utf-8") as f:
                     f.write("\n".join(filenames))
 
+        with open(logFName, "a", encoding="utf-8") as f:
+            f.write("summary:\nnumber_of_files={}".format(len(files)))
+
     except EnvironmentError as e:
         print(str(e))
         return list()
