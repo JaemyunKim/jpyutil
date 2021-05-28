@@ -155,6 +155,7 @@ def makeFilelist(directory="."):
                 files.extend(filenames)
                 with open(logFName, "a", encoding="utf-8") as f:
                     f.write("\n".join(filenames))
+                    f.write("\n")
 
         with open(logFName, "a", encoding="utf-8") as f:
             f.write("summary:\nnumber_of_files={}".format(len(files)))
