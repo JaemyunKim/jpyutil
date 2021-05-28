@@ -28,11 +28,13 @@ class S3Storage():
             elif env_items["NUM_CPUS"] > 1:
                 self.process_count = max(min(env_items["NUM_CPUS"], multiprocessing.cpu_count()), 1)
             else:
-                self.process_count = 1
+                self.process_count = multiprocessing.cpu_count()
+        else:
+            self.process_count = 1
 
-            self.env_items = env_items
-            self.file_names = list()
-            self.worker = None
+        self.env_items = env_items
+        self.file_names = list()
+        self.worker = None
 
 
     def upload_files(self, file_names):
@@ -53,7 +55,7 @@ class S3Storage():
 
         print("{} files, ready to start!!\n".format(len(self.file_names)))
 
-        # run multiprocessin.Process
+        # run multiprocessing.Process
         for mp in mps:
             mp.start()
 
@@ -103,7 +105,7 @@ class Worker_S3Uploader(multiprocessing.Process):
         logFName = Path(self.logFDir / "log-file_upload-{}.txt".format(self.pid))
         with open(logFName, "w", encoding="utf-8") as f:
             f.write("filelist_ver=0.0.1\n")
-            f.write("start_time{}\n".format(dt))
+            f.write("start_time={}\n".format(dt))
             f.write("directory={}\n".format(directory))
             f.write("absolute_directory={}\n".format(directory.absolute()))
             f.write("s3_bucket={}\n".format(self.env_items["BUCKET_NAME"]))
