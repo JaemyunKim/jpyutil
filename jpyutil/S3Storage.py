@@ -85,6 +85,14 @@ class Worker_S3Uploader(multiprocessing.Process):
         self.global_tqdm = global_tqdm
         self.logFDir = Path("./logs")
 
+        # Enable thread use/transfer concurrency
+        GB = 1024 ** 3
+        self.config = TransferConfig(
+            multipart_threshold=100 * GB, 
+            max_concurrency=10,
+            use_threads=True
+        )
+
 
     def run(self):
         try:
@@ -122,7 +130,7 @@ class Worker_S3Uploader(multiprocessing.Process):
                 dstFName = os.path.join(self.env_items["PREFIX"], dstFName.replace(" ", "_")).replace("\\", "/")
 
                 try:
-                    self.client.upload_file(srcFName, self.env_items["BUCKET_NAME"], dstFName)
+                    self.client.upload_file(srcFName, self.env_items["BUCKET_NAME"], dstFName, Config=self.config)
                     cnt_success += 1
                     msg_log = "{}\t->\t{}".format(srcFName, dstFName)
                     msg_print = "{}".format(dstFName)
