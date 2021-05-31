@@ -14,6 +14,7 @@ import tqdm
 import multiprocessing
 
 import boto3
+from boto3.s3.transfer import TransferConfig
 import botocore
 from botocore.config import Config
 boto3.set_stream_logger(name='boto3', level=logging.WARNING)
