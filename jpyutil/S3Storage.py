@@ -133,8 +133,8 @@ class Worker_S3Uploader(multiprocessing.Process):
                 try:
                     self.client.upload_file(srcFName, self.env_items["BUCKET_NAME"], dstFName, Config=self.config)
                     cnt_success += 1
-                    msg_log = "{}\t->\t{}".format(srcFName, dstFName)
-                    msg_print = "{}".format(dstFName)
+                    msg_log = "ok\t{}\t->\t{}".format(srcFName, dstFName)
+                    msg_print = "ok\t{}".format(dstFName)
 
                 except:# Exception as e: 
                     cnt_fail += 1
