@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 
-from jpyutil.utils import readEnv, makeFilelist
+from jpyutil.utils import readEnv, getFilelist
 from jpyutil.S3Storage import S3Storage
 import multiprocessing
 
@@ -13,8 +13,8 @@ def main():
 	env_items["LOCAL_DIRECTORY"] = "./test" # source directory
 	env_items["NUM_CPUS"] = multiprocessing.cpu_count() - 1
 
-	# make a filename list
-	files = makeFilelist(env_items["LOCAL_DIRECTORY"])
+	# get a filename list
+	files = getFilelist(env_items["LOCAL_DIRECTORY"])
 	if len(files) == 0:
 		exit(0)
 
