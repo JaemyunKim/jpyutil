@@ -121,49 +121,117 @@ def readEnv(path=".", filename="env"):
     return items
 
 
-def makeFilelist(directory="."):
-    # check the target directory
-    if not os.path.exists(directory):
-        print("Cannot find the directory: {}".format(directory))
-        return list()
+def getFilelist(target, log_dir="./logs"):
+  # check the target directory or the target file
+  target = Path(target)
+  if not target.exists():
+    print("Cannot find the target: {}".format(target))
+    return list()
 
-    dt = datetime.now()
-    directory = Path(directory)
-    logFDir = Path("./logs")
-    logFDir.mkdir(parents=True, exist_ok=True) #make dir
-    logFName = Path(logFDir / "filelist.txt")
+  dt = datetime.now()
+  logFDir = Path(log_dir)
+  logFDir.mkdir(parents=True, exist_ok=True) # make dir
+  logFName = Path(logFDir / "filelist.txt")
 
-    # make a filename list
-    print("making a filelist")
+  files = []
+  if target.is_dir():
+    directory = target
     try:
-        with open(logFName, "w", encoding="utf-8") as f:
-            f.write("filelist_ver=0.0.1\n")
-            f.write("start_time={}\n".format(dt))
-            f.write("directory-{}\n".format(directory))
-            f.write("absolute_directory={}\n". format(directory.absolute()))
-            f.write("filelist:\n")
+      with open(logFName, "W", encoding="utf-8") as f:
+        f.write("filelist_ver=0.0.1\n")
+        f.write("start_time={}\n".format(dt))
+        f.write("directory={}\n".format(target))
+        f.write("absolute_directory={}\n".format(target.absolute()))
+        f.write("filelist:\n")
 
-    except EnvironmentError as e:
-        print(str(e))
-        return list()
+    except Exception as e:
+      print(str(e))
+      return list()
 
     try:
-        files = []
-        for (path, dir, files_in_path) in os.walk(directory):
-            if len(files_in_path) > 0:
-                filenames = [os.path.join(path, filename).replace("\\", "/") for filename in files_in_path]
-                files.extend(filenames)
-                with open(logFName, "a", encoding="utf-8") as f:
-                    f.write("\n".join(filenames))
-                    f.write("\n")
+      for (path, dir, files_in_path) in os.walk(directory):
+        if len(files_in_path) > 0:
+          filenames = [os.path.join(path, filename).replace("\\", "/") for filename in files_in_path]
+          files.extend(filenames)
+          with open(lofFName, "a", encoding="utf-8") as f:
+            f.write("\n".join(filenames))
+            f.write("\n")
 
-        with open(logFName, "a", encoding="utf-8") as f:
-            f.write("summary:\nnumber_of_files={}".format(len(files)))
+       with open(logFName, "a", encoding="utf-8") as f:
+         f.write("summary:\nnumber_of_files={}".format(len(files))
 
-    except EnvironmentError as e:
+     except Exception as e:
+       print(str(e))
+       return list()
+
+  elif target.is_file():
+    try:
+      fName = target
+      with open(fName, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f if line.strip() and not line.strip.startswith("#")]
+     
+      idx_begin, idx_end = 0, len(lines)
+      for i in range(len(lines)):
+        if lines[i] == "filelist:":
+          idx_begin = i + 1
+        if lines[i] == "summary:":
+          idx_end = i
+          break
+
+      files = lines[idx_begin:idx_end]
+      print("# of files in {}: {}".format(fName, len(files)))
+    
+    except Exception as e:
+      print(str(e))
+      return list()
+
+    try:
+      directory = target.parent
+      log_pid_list = []
+      target_fName = "log-file_upload"
+      for (path, dir, files_in_path) in os.walk(directory):
+        for log_fName in files_in_path:
+          if log_fName[:len(target_fName)] == target_fName:
+            log_pid_list.append(log_fName)
+
+      files_set = set(files)
+      for log_pid_fName in log_pid_list:
+        with open(os.path.join(directory, log_pid_fName), "r", encoding="utf-8") as f:
+          lines = [lines.strip() for line in f line.strip() and not line.strip().startswith("#")]
+
+        idx_begin, idx_end = 0, len(files)
+        for i in range(len(lines)):
+          if lines[i] == "filelist:":
+            idx_begin = i + 1
+          if lines[i] == "summary:":
+            idx_end = i
+            break
+
+         transfer_files = [line.split("\t")[1:3][1] for line in lines[idx_begin:idx_end] if line.split("\t")[1:3][0][13:] == "ok"]
+          files_set = files_set - set(transfer_files)
+
+        files = list(files_set)
+
+        with open(logFName, "W", encoding="utf-8") as f:
+          # write header
+          for line in lines[:idx_begin]:
+            if "start_time" in line.split("=")[0]:
+              f.write("start_time={}\n".format(dt))
+            else:
+              f.write("{}\n".format(line))
+
+          # write contents
+          f.write("\n".join(files))
+          f.write("\n")
+
+          # write trailer
+          f.write("summary:\nnumber_of_files={}".format(len(files)))
+
+      except Exception as e:
         print(str(e))
         return list()
 
     print("filelist has {} files".format(len(files)))
 
     return files
+ 
