@@ -137,7 +137,7 @@ def getFilelist(target, log_dir="./logs"):
     if target.is_dir():
         directory = target
         try:
-            with open(logFName, "W", encoding="utf-8") as f:
+            with open(logFName, "w", encoding="utf-8") as f:
                 f.write("filelist_ver=0.0.1\n")
                 f.write("start_time={}\n".format(dt))
                 f.write("directory={}\n".format(target))
@@ -154,8 +154,8 @@ def getFilelist(target, log_dir="./logs"):
                     filenames = [os.path.join(path, filename).replace("\\", "/") for filename in files_in_path]
                     files.extend(filenames)
                     with open(logFName, "a", encoding="utf-8") as f:
-                      f.write("\n".join(filenames))
-                      f.write("\n")
+                        f.write("\n".join(filenames))
+                        f.write("\n")
 
             with open(logFName, "a", encoding="utf-8") as f:
                 f.write("summary:\nnumber_of_files={}".format(len(files)))
@@ -180,7 +180,7 @@ def getFilelist(target, log_dir="./logs"):
 
             files = lines[idx_begin:idx_end]
             print("# of files in {}: {}".format(fName, len(files)))
-    
+
         except Exception as e:
             print(str(e))
             return list()
@@ -212,7 +212,7 @@ def getFilelist(target, log_dir="./logs"):
 
             files = list(files_set)
 
-            with open(logFName, "W", encoding="utf-8") as f:
+            with open(logFName, "w", encoding="utf-8") as f:
                 # write header
                 for line in lines[:idx_begin]:
                     if "start_time" in line.split("=")[0]:
