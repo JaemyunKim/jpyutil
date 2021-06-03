@@ -22,7 +22,7 @@ boto3.set_stream_logger(name='botocore', level=logging.WARNING)
 
 
 class S3Storage():
-    def __init__(self, env_items):
+    def __init__(self, env_items, log_dir="logs"):
         if "NUM_CPUS" in env_items.keys():
             if env_items["NUM_CPUS"] == 1:
                 self.process_count = 1
@@ -35,13 +35,12 @@ class S3Storage():
             self.process_count = 1
 
         self.env_items = env_items
+        self.log_dir = log_dir
         self.file_names = list()
-        self.worker = None
 
 
     def upload_files(self, file_names):
         self.file_names = file_names
-        self.worker = Worker_S3Uploader(self.env_items, self.file_names, self.process_count)
 
         # divide the list to n lists
         item_nb = math.ceil(len(self.file_names) / self.process_count)
@@ -51,7 +50,7 @@ class S3Storage():
             #global_progress.set_description("total")
         mps = list()
         for i in range(len(tasks)):
-            worker = Worker_S3Uploader(self.env_items, tasks[i])#, global_progress)
+            worker = Worker_S3Uploader(self.env_items, tasks[i], log_dir=self.log_dir)#, global_progress)
             worker.daemon = True
             mps.append(worker)
 
@@ -77,14 +76,17 @@ class S3Storage():
 
 
 class Worker_S3Uploader(multiprocessing.Process):
-    def __init__(self, env_items, file_list, global_tqdm = None):
+    def __init__(self, env_items, file_list, log_dir = "logs", global_tqdm = None):
         multiprocessing.Process.__init__(self)
         self.exit = multiprocessing.Event()
 
         self.env_items = env_items
         self.file_list = file_list
         self.global_tqdm = global_tqdm
-        self.logFDir = Path("./logs")
+        self.logFDir = Path(log_dir)
+
+        self.transfer_ok = []
+        self.transfer_failed = []
 
         # Enable thread use/transfer concurrency
         GB = 1024 ** 3
@@ -94,6 +96,9 @@ class Worker_S3Uploader(multiprocessing.Process):
             use_threads=True
         )
 
+
+    def report(self):
+        return self.transfer_ok, relf.transfer_failed
 
     def run(self):
         try:
@@ -124,7 +129,6 @@ class Worker_S3Uploader(multiprocessing.Process):
             f.write("filelist:\n")
 
         try:
-            cnt_success, cnt_fail = 0, 0
             for item in self.file_list:
                 srcFName = item
                 dstFName = os.path.relpath(srcFName, start=self.env_items["LOCAL_DIRECTORY"])
@@ -132,12 +136,12 @@ class Worker_S3Uploader(multiprocessing.Process):
 
                 try:
                     self.client.upload_file(srcFName, self.env_items["BUCKET_NAME"], dstFName, Config=self.config)
-                    cnt_success += 1
+                    self.transfer_ok.append(srcFName)
                     msg_log = "ok\t{}\t->\t{}".format(srcFName, dstFName)
                     msg_print = "ok\t{}".format(dstFName)
 
                 except:# Exception as e: 
-                    cnt_fail += 1
+                    self.transfer_failed.append(srcFName)
                     msg_log = "failed\t{}\t->\t{}".format(srcFName, dstFName)
                     msg_print = "failed\t{}".format(dstFName)
 
@@ -155,7 +159,7 @@ class Worker_S3Uploader(multiprocessing.Process):
                     self.global_tqdm.update()
 
             with open(logFName, "a", encoding="utf-8") as f:
-                f.write("summary:\nsuccess={}\nfailed={}".format(cnt_success, cnt_fail))
+                f.write("summary:\nsuccess={}\nfailed={}".format(len(self.transfer_ok), len(self.transfer_failed)))
 
         except Exception as e:
             print(e)
