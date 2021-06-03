@@ -37,6 +37,9 @@ class S3Storage():
         self.env_items = env_items
         self.log_dir = log_dir
         self.file_names = list()
+        self.transfer_ok = list()
+        self.transfer_fail = list()
+        self.transfer_miss = list()
 
 
     def upload_files(self, file_names):
@@ -64,7 +67,22 @@ class S3Storage():
         for mp in mps:
             mp.join()
 
+        # get a report
+        self.transfer_ok.clear()
+        self.transfer_ok.clear()
+        self.transfer_ok.clear()
+        for mp in mps:
+            ok, fail = mp.report()
+            self.transfer_ok.extend(ok)
+            self.transfer_fail.extend(fail)
+
         print("\nupload done")
+        print("total files: {}".format(len(self.file_names)))
+        print("success: {}\t failed: {}".format(len(self.transfer_ok), len(self.transfer_fail)))
+
+        self.transfer_miss = list(set(self.file_names) - set(self.transfer_ok) - set(self.transfer_fail))
+        if len(self.transfer_miss > 0:
+            print("missing: {}".format(len(self.transfer_miss)))
 
 
     def download_files(self, env_items, file_names):
