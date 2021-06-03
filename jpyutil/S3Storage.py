@@ -98,7 +98,7 @@ class Worker_S3Uploader(multiprocessing.Process):
 
 
     def report(self):
-        return self.transfer_ok, relf.transfer_failed
+        return self.transfer_ok, self.transfer_failed
 
     def run(self):
         try:
