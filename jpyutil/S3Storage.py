@@ -69,8 +69,8 @@ class S3Storage():
 
         # get a report
         self.transfer_ok.clear()
-        self.transfer_ok.clear()
-        self.transfer_ok.clear()
+        self.transfer_fail.clear()
+        self.transfer_miss.clear()
         for mp in mps:
             ok, fail = mp.report()
             self.transfer_ok.extend(ok)
@@ -81,7 +81,7 @@ class S3Storage():
         print("success: {}\t failed: {}".format(len(self.transfer_ok), len(self.transfer_fail)))
 
         self.transfer_miss = list(set(self.file_names) - set(self.transfer_ok) - set(self.transfer_fail))
-        if len(self.transfer_miss > 0:
+        if len(self.transfer_miss) > 0:
             print("missing: {}".format(len(self.transfer_miss)))
 
 
