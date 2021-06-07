@@ -37,7 +37,7 @@ class S3Storage():
         self.env_items = env_items
         self.log_dir = Path(log_dir)
         self.file_names = list()
-        slef.manager = multiprocessing.Manager()
+        self.manager = multiprocessing.Manager()
         self.transfer_result = self.manager.dict()
         self.transfer_result["ok"] = self.manager.list()
         self.transfer_result["fail"] = self.manager.list()
@@ -47,7 +47,7 @@ class S3Storage():
         self.__getFilelist()
 
 
-     def getFilelist(self):
+     def __getFilelist(self):
         # check the target directory or the target file
         target = Path(self.env_items["LOCAL_DIRECTORY"])
         if not target.exists():
@@ -56,9 +56,8 @@ class S3Storage():
             return False
 
         dt = datetime.now()
-        logFDir = Path(log_dir)
-        logFDir.mkdir(parents=True, exist_ok=True) # make dir
-        logFName = Path(logFDir / "filelist.txt")
+        self.log_dir.mkdir(parents=True, exist_ok=True) # make dir
+        logFName = Path(self.log_dir / "filelist.txt")
 
         self.file_names.clear()
         if target.is_dir():
@@ -86,7 +85,7 @@ class S3Storage():
                             f.write("\n")
 
                 with open(logFName, "a", encoding="utf-8") as f:
-                    f.write("summary:\nnumber_of_files={}".format(len(files)))
+                    f.write("summary:\nnumber_of_files={}".format(len(self.file_names)))
 
             except Exception as e:
                 print(str(e))
@@ -167,7 +166,7 @@ class S3Storage():
         return True
 
 
-    def upload_files(self, file_names):
+    def upload_files(self):
         if len(self.file_names) == 0:
             return False
 
@@ -197,14 +196,14 @@ class S3Storage():
         transfer_ok = self.transfer_result["ok"]
         transfer_fail = self.transfer_result["fail"]
         transfer_miss = self.transfer_result["miss"]
+        transfer_miss = list(set(self.file_names) - set(self.transfer_ok) - set(self.transfer_fail))
 
         print("\nupload done")
         print("total files: {}".format(len(self.file_names)))
-        print("success: {}\t failure: {}".format(len(self.transfer_ok), len(self.transfer_fail)))
+        print("success: {}\t failure: {}".format(len(.transfer_ok), len(transfer_fail)))
 
-        self.transfer_miss = list(set(self.file_names) - set(self.transfer_ok) - set(self.transfer_fail))
         if len(self.transfer_miss) > 0:
-            print("missing: {}".format(len(self.transfer_miss)))
+            print("missing: {}".format(len(transfer_miss)))
         else:
             print("no missing files")
 
@@ -227,9 +226,6 @@ class Worker_S3Uploader(multiprocessing.Process):
         self.global_tqdm = global_tqdm
         self.logFDir = Path(log_dir)
 
-        self.transfer_ok = []
-        self.transfer_failed = []
-
         # Enable thread use/transfer concurrency
         GB = 1024 ** 3
         self.config = TransferConfig(
@@ -238,9 +234,6 @@ class Worker_S3Uploader(multiprocessing.Process):
             use_threads=True
         )
 
-
-    def report(self):
-        return self.transfer_ok, self.transfer_failed
 
     def run(self):
         try:
