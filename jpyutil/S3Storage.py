@@ -43,6 +43,8 @@ class S3Storage():
         self.transfer_result["fail"] = self.manager.list()
         self.transfer_result["miss"] = self.manager.list()
 
+        self.log_dir.mkdir(parents=True, exist_ok=True) # make dir
+
         # generate a file list
         self.__getFilelist()
 
@@ -56,7 +58,6 @@ class S3Storage():
             return False
 
         dt = datetime.now()
-        self.log_dir.mkdir(parents=True, exist_ok=True) # make dir
         logFName = Path(self.log_dir / "filelist.txt")
 
         self.file_names.clear()
