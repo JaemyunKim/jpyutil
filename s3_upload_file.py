@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 
-from jpyutil.utils import readEnv, getFilelist
+from jpyutil.utils import readEnv
 from jpyutil.S3Storage import S3Storage
 import multiprocessing
 
@@ -13,8 +13,10 @@ def main():
 	env_items["LOCAL_DIRECTORY"] = "./test" # source directory
 	env_items["NUM_PROCESS"] = 1 * multiprocessing.cpu_count() - 1
 
+        log_dir = "logs"
+
 	# generate a filename list and upload them
-	s3_storage = S3Storage(env_items)
+	s3_storage = S3Storage(env_items, log_dir=log_dir)
 	if s3_storage.upload_files() is False:
             print("Failed to run S3Storage!!")
             exit(1)
