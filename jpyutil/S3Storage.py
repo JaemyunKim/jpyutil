@@ -47,7 +47,7 @@ class S3Storage():
         self.__getFilelist()
 
 
-     def __getFilelist(self):
+    def __getFilelist(self):
         # check the target directory or the target file
         target = Path(self.env_items["LOCAL_DIRECTORY"])
         if not target.exists():
@@ -195,14 +195,13 @@ class S3Storage():
         # get a report
         transfer_ok = self.transfer_result["ok"]
         transfer_fail = self.transfer_result["fail"]
-        transfer_miss = self.transfer_result["miss"]
-        transfer_miss = list(set(self.file_names) - set(self.transfer_ok) - set(self.transfer_fail))
+        transfer_miss = list(set(self.file_names) - set(transfer_ok) - set(transfer_fail))
 
         print("\nupload done")
         print("total files: {}".format(len(self.file_names)))
-        print("success: {}\t failure: {}".format(len(.transfer_ok), len(transfer_fail)))
+        print("success: {}\tfailure: {}".format(len(transfer_ok), len(transfer_fail)))
 
-        if len(self.transfer_miss) > 0:
+        if len(transfer_miss) > 0:
             print("missing: {}".format(len(transfer_miss)))
         else:
             print("no missing files")
