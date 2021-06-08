@@ -105,7 +105,7 @@ class S3Storage():
                 header = []
                 for i, line in enumerate(lines):
                     header.append(line)
-                    if lines[i] == "filelist:":
+                    if line == "filelist:":
                         idx_begin = i + 1
                         break
                     elif line.startswith("start_time="):
@@ -116,8 +116,8 @@ class S3Storage():
 
                 self.file_names.clear()
                 for i, line in enumerate(lines[idx_begin:]):
-                    if lines[i] == "summary:":
-                        idx_end = idx_begin + 1
+                    if line == "summary:":
+                        idx_end = idx_begin + i
                         break
                     self.file_names.append(line)
 
