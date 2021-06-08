@@ -10,6 +10,7 @@ import math
 import time
 from datetime import datetime
 from pathlib import Path
+import shutil
 import tqdm
 import multiprocessing
 
@@ -58,7 +59,7 @@ class S3Storage():
             return False
 
         dt = datetime.now()
-        logFName = Path(self.log_dir / "filelist.txt")
+        logFName = self.log_dir / "filelist.txt"
 
         self.file_names.clear()
         if target.is_dir():
@@ -100,14 +101,30 @@ class S3Storage():
                     lines = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
 
                 idx_begin, idx_end = 0, len(lines)
-                for i in range(len(lines)):
+                prev_start_time = "unknown"
+                header = []
+                for i, line in enumerate(lines):
+                    header.append(line)
                     if lines[i] == "filelist:":
                         idx_begin = i + 1
-                    if lines[i] == "summary:":
-                        idx_end = i
                         break
+                    elif line.startswith("start_time="):
+                        prev_dt = datetime.strptime(line.split("=")[1], "%Y-%m-%d %H:%M:%S.%f")
+                        prev_start_time = prev_dt.strftime("%Y%m%d-%H%M%S")
+                    elif line.startswith("directory="):
+                        self.env_items["LOCAL_DIRECTORY"] = line.split("=")[1]
 
-                self.file_names = lines[idx_begin:idx_end]
+                self.file_names.clear()
+                for i, line in enumerate(lines[idx_begin:]):
+                    if lines[i] == "summary:":
+                        idx_end = idx_begin + 1
+                        break
+                    self.file_names.append(line)
+
+                trailer = []
+                for line in lines[idx_end:]:
+                    trailer.append(line)
+
                 print("# of files in {}: {}".format(fName, len(self.file_names)))
 
             except Exception as e:
@@ -119,10 +136,9 @@ class S3Storage():
                 directory = target.parent
                 log_pid_list = []
                 target_fName = "log-file_upload"
-                for (path, dir, files_in_path) in os.walk(directory):
-                    for log_fName in files_in_path:
-                        if log_fName[:len(target_fName)] == target_fName:
-                            log_pid_list.append(log_fName)
+                for log_fName in os.listdir(directory):
+                    if log_fName[:len(target_fName)] == target_fName:
+                        log_pid_list.append(log_fName)
 
                 files_set = set(self.file_names)
                 for log_pid_fName in log_pid_list:
@@ -142,9 +158,16 @@ class S3Storage():
 
                 self.file_names = list(files_set)
 
+                # move all previous log files into a sub-directory
+                sub_log_dir = self.log_dir / "prev-{}".format(prev_start_time)
+                sub_log_dir.mkdir(parents=True, exist_ok=True) # make dir
+                shutil.move(str(self.log_dir / "filelist.txt"), sub_log_dir) # move filelist.txt
+                for log_pid_fName in log_pid_list:
+                    shutil.move(str(self.log_dir / log_pid_fName), sub_log_dir) # move pid-log files
+
                 with open(logFName, "w", encoding="utf-8") as f:
                     # write header
-                    for line in lines[:idx_begin]:
+                    for line in header:
                         if "start_time" in line.split("=")[0]:
                             f.write("start_time={}\n".format(dt))
                         else:
@@ -219,7 +242,11 @@ class Worker_S3Uploader(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self.exit = multiprocessing.Event()
 
-        self.result = transfer_result
+        self.total_result = transfer_result
+        self.result = {
+            "ok": list(), 
+            "fail": list(), 
+        }
 
         self.env_items = env_items
         self.file_list = file_list
@@ -272,11 +299,13 @@ class Worker_S3Uploader(multiprocessing.Process):
                 try:
                     self.client.upload_file(srcFName, self.env_items["BUCKET_NAME"], dstFName, Config=self.config)
                     self.result["ok"].append(srcFName)
+                    self.total_result["ok"].append(srcFName)
                     msg_log = "ok\t{}\t->\t{}".format(srcFName, dstFName)
                     msg_print = "ok\t{}".format(dstFName)
 
-                except:# Exception as e: 
+                except:# Exception as e:
                     self.result["fail"].append(srcFName)
+                    self.total_result["fail"].append(srcFName)
                     msg_log = "failed\t{}\t->\t{}".format(srcFName, dstFName)
                     msg_print = "failed\t{}".format(dstFName)
 
